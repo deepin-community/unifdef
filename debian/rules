@@ -1,4 +1,41 @@
 #!/usr/bin/make -f
 
-%:
-	dh $@
+build: build-arch build-indep
+
+build-indep: build-stamp
+
+build-arch: build-stamp
+
+build-stamp:
+	$(MAKE) $(shell dpkg-buildflags --export=cmdline)
+	LC_ALL=C $(MAKE) test
+	touch build-stamp
+
+clean:
+	rm -f build-stamp
+	rm -f unifdef
+	rm -f version.h
+	dh_clean
+
+install: build
+	dh_clean
+	dh_installdirs
+	$(MAKE) install prefix=/usr DESTDIR=$(CURDIR)/debian/unifdef
+
+binary: binary-indep binary-arch
+
+binary-indep: build install
+
+binary-arch: build install
+	dh_installdocs
+	dh_installchangelogs
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+.PHONY: build build-arch build-indep clean binary-indep binary-arch binary install
